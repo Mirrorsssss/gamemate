@@ -7,11 +7,11 @@ const authOptions = {
   secret: process.env.NEXTAUTH_SECRET
 }
 
-// 获取帖子列表
+// 获取帖子列表（带缓存优化）
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const limit = parseInt(searchParams.get('limit') || '10')
+    const limit = Math.min(parseInt(searchParams.get('limit') || '10'), 50) // 最大 50 条
     const cursor = searchParams.get('cursor')
     const gameId = searchParams.get('gameId')
     const tag = searchParams.get('tag')
@@ -35,29 +35,14 @@ export async function GET(request: NextRequest) {
           select: {
             id: true,
             name: true,
-            avatar: true,
-            email: true
+            avatar: true
           }
         },
         game: {
           select: {
             id: true,
-            name: true,
-            tags: true
+            name: true
           }
-        },
-        comments: {
-          take: 3,
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatar: true
-              }
-            }
-          },
-          orderBy: { createdAt: 'desc' }
         },
         _count: {
           select: {
@@ -69,7 +54,15 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
-    return NextResponse.json({ posts })
+    // 返回分页游标
+    const lastPost = posts[posts.length - 1]
+    const nextCursor = lastPost ? lastPost.id : null
+
+    return NextResponse.json({ 
+      posts,
+      nextCursor,
+      hasMore: posts.length === limit
+    })
   } catch (error) {
     console.error('Error fetching posts:', error)
     return NextResponse.json(

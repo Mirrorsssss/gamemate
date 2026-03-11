@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
+import { createNotification } from '@/lib/notifications'
 
 const authOptions = {
   providers: [],
@@ -130,6 +131,15 @@ export async function POST(
           followingId: targetUserId
         }
       })
+
+      // 创建通知
+      await createNotification(
+        targetUserId,
+        'follow',
+        '有人关注了你',
+        null,
+        `/users/${currentUserId}`
+      )
 
       return NextResponse.json({ following: true })
     }

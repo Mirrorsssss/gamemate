@@ -293,3 +293,21 @@ model CompanionOrder {
   @@index([companionId])
   @@index([status])
 }
+
+// 通知系统
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // like, comment, follow, mention, system
+  title     String
+  content   String?  @db.Text
+  read      Boolean  @default(false)
+  link      String?  // 相关链接
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}

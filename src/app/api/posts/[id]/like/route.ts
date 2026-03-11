@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
+import { createNotification } from '@/lib/notifications'
 
 const authOptions = {
   providers: [],
@@ -50,6 +51,22 @@ export async function POST(
           userId
         }
       })
+
+      // 创建通知（不通知自己）
+      const post = await prisma.post.findUnique({
+        where: { id: postId },
+        select: { userId: true }
+      })
+      
+      if (post && post.userId !== userId) {
+        await createNotification(
+          post.userId,
+          'like',
+          '有人点赞了你的动态',
+          null,
+          `/posts/${postId}`
+        )
+      }
 
       return NextResponse.json({ liked: true })
     }

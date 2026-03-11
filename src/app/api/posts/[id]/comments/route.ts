@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
+import { createNotification } from '@/lib/notifications'
 
 const authOptions = {
   providers: [],
@@ -102,6 +103,40 @@ export async function POST(
         }
       }
     })
+
+    // 创建通知（如果是回复他人评论，通知被回复者）
+    if (parentId) {
+      const parentComment = await prisma.comment.findUnique({
+        where: { id: parentId },
+        select: { userId: true }
+      })
+      
+      if (parentComment && parentComment.userId !== session.user.id) {
+        await createNotification(
+          parentComment.userId,
+          'comment',
+          '有人回复了你的评论',
+          content?.slice(0, 100),
+          `/posts/${params.id}`
+        )
+      }
+    } else {
+      // 通知帖子作者
+      const post = await prisma.post.findUnique({
+        where: { id: params.id },
+        select: { userId: true }
+      })
+      
+      if (post && post.userId !== session.user.id) {
+        await createNotification(
+          post.userId,
+          'comment',
+          '有人评论了你的动态',
+          content?.slice(0, 100),
+          `/posts/${params.id}`
+        )
+      }
+    }
 
     return NextResponse.json(comment, { status: 201 })
   } catch (error) {
