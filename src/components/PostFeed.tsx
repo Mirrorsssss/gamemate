@@ -49,12 +49,18 @@ export default function PostFeed({ onPostCreated }: PostFeedProps) {
                 GameMate
               </h1>
               {session ? (
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <Link
                     href="/groups"
-                    className="px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition text-sm"
+                    className="px-3 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition text-sm"
                   >
                     群组
+                  </Link>
+                  <Link
+                    href="/services"
+                    className="px-3 py-2 border border-pink-600 text-pink-600 rounded-lg hover:bg-pink-50 transition text-sm"
+                  >
+                    陪玩
                   </Link>
                   <button
                     onClick={() => setShowCreateModal(true)}
@@ -201,18 +207,42 @@ function CreatePostModal({ onClose, onSuccess }: { onClose: () => void; onSucces
   const [tags, setTags] = useState('')
   const [selectedGame, setSelectedGame] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>('')
+  const [uploading, setUploading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitting(true)
 
     try {
+      let imageUrl = ''
+      
+      // 上传图片
+      if (imageFile) {
+        setUploading(true)
+        const formData = new FormData()
+        formData.append('image', imageFile)
+        
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (uploadRes.ok) {
+          const uploadData = await uploadRes.json()
+          imageUrl = uploadData.url
+        }
+        setUploading(false)
+      }
+
       const res = await fetch('/api/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title,
           content,
+          images: imageUrl ? [imageUrl] : [],
           tags: tags.split(/[,,]/).map(t => t.trim()).filter(Boolean),
           gameId: selectedGame || undefined
         })
@@ -260,6 +290,30 @@ function CreatePostModal({ onClose, onSuccess }: { onClose: () => void; onSucces
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">配图</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  setImageFile(file)
+                  const reader = new FileReader()
+                  reader.onloadend = () => {
+                    setImagePreview(reader.result as string)
+                  }
+                  reader.readAsDataURL(file)
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+            />
+            {imagePreview && (
+              <div className="mt-2">
+                <img src={imagePreview} alt="Preview" className="h-32 rounded-lg object-cover" />
+              </div>
+            )}
+          </div>
+          <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">游戏</label>
             <select
               value={selectedGame}
@@ -292,10 +346,10 @@ function CreatePostModal({ onClose, onSuccess }: { onClose: () => void; onSucces
             </button>
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || uploading}
               className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 disabled:opacity-50"
             >
-              {submitting ? '发布中...' : '发布'}
+              {uploading ? '上传中...' : submitting ? '发布中...' : '发布'}
             </button>
           </div>
         </form>
