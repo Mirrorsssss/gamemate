@@ -2,18 +2,22 @@
 
 游戏版小红书/抖音 + 找队友/陪玩服务
 
+## 🌐 线上地址
+
+**https://gamemate-zeta.vercel.app**
+
 ## 技术栈
 
 - **前端**: Next.js 14 + TypeScript + Tailwind CSS
 - **后端**: Next.js API Routes
 - **数据库**: PostgreSQL (Supabase)
-- **ORM**: Prisma
+- **ORM**: Prisma v5
 - **认证**: NextAuth.js
 - **部署**: Vercel
 
 ## 功能
 
-### 已完成
+### 已完成 ✅
 - ✅ 用户注册/登录
 - ✅ 动态发布（图文 + 标签）
 - ✅ 信息流展示（瀑布流）
@@ -21,14 +25,14 @@
 - ✅ 点赞功能
 - ✅ 评论系统
 
-### 开发中
+### 开发中 🚧
 - 🚧 关注系统
 - 🚧 个人主页
 - 🚧 群组聊天
 - 🚧 陪玩服务
 - 🚧 找队友匹配
 
-## 快速开始
+## 本地开发
 
 ### 1. 安装依赖
 
@@ -64,14 +68,9 @@ npm run dev
 
 访问 http://localhost:3000
 
-## 测试账号
-
-- 邮箱：demo@gamemate.com
-- 密码：123456
-
 ## 部署
 
-项目已配置 Vercel 部署，推送到 GitHub 后自动部署。
+项目已配置自动部署到 Vercel，推送到 GitHub main 分支后自动构建发布。
 
 ## 项目结构
 
@@ -91,6 +90,10 @@ gamemate/
 │   └── types/             # TypeScript 类型
 └── .env                   # 环境变量
 ```
+
+## 注意事项
+
+⚠️ **数据库配置**: 需要有效的 Supabase 连接字符串才能运行。请更新 `.env` 中的 `DATABASE_URL`。
 
 ## License
 
