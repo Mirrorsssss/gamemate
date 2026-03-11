@@ -69,6 +69,7 @@ model User {
   companionOrdersCompanion CompanionOrder[] @relation("CompanionOrderCompanion")
   ownedGroups           Group[] @relation("GroupOwner")
   groupMessages         GroupMessage[]
+  notifications         Notification[]
 }
 
 model VerificationToken {
