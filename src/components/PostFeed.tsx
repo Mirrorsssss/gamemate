@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
+import Link from 'next/link'
 
 interface PostFeedProps {
   onPostCreated?: () => void
@@ -145,8 +146,6 @@ export default function PostFeed({ onPostCreated }: PostFeedProps) {
     </>
   )
 }
-
-import Link from 'next/link'
 
 function PostCard({ post }: { post: any }) {
   return (
