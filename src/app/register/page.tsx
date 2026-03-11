@@ -57,7 +57,7 @@ export default function RegisterPage() {
         router.push('/')
         router.refresh()
       }
-    } catch (err) {
+    } catch {
       setError('注册失败，请稍后重试')
     } finally {
       setLoading(false)

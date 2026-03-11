@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     const gameId = searchParams.get('gameId')
     const tag = searchParams.get('tag')
 
-    const where: any = {}
+    const where: { gameId?: string; tags?: { has: string } } = {}
     
     if (gameId) {
       where.gameId = gameId
