@@ -49,6 +49,12 @@ export default function PostFeed({ onPostCreated }: PostFeedProps) {
               </h1>
               {session ? (
                 <div className="flex items-center gap-4">
+                  <Link
+                    href="/groups"
+                    className="px-4 py-2 border border-purple-600 text-purple-600 rounded-lg hover:bg-purple-50 transition text-sm"
+                  >
+                    群组
+                  </Link>
                   <button
                     onClick={() => setShowCreateModal(true)}
                     className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:opacity-90 transition text-sm"
