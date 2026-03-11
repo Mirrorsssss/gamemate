@@ -1,0 +1,294 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// NextAuth.js 所需模型
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // 用于凭证登录
+  avatar        String?   // 用户头像
+  bio           String?   @db.Text
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  posts               Post[]
+  comments            Comment[]
+  likes               Like[]
+  games               UserGame[]
+  followedBy          Follow[] @relation("following")
+  following           Follow[] @relation("follower")
+  groups              GroupMember[]
+  sentMessages        Message[] @relation("sender")
+  receivedMessages    Message[] @relation("receiver")
+  companionServices     CompanionService[]
+  companionOrdersClient CompanionOrder[] @relation("CompanionOrderClient")
+  companionOrdersCompanion CompanionOrder[] @relation("CompanionOrderCompanion")
+  ownedGroups           Group[] @relation("GroupOwner")
+  groupMessages         GroupMessage[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// 游戏相关模型
+model Game {
+  id          String     @id @default(cuid())
+  name        String
+  description String?    @db.Text
+  coverImage  String?
+  tags        String[]   // 游戏标签
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  users UserGame[]
+  posts Post[]
+  companionServices CompanionService[] @relation("CompanionServiceGame")
+
+  @@index([name])
+}
+
+model UserGame {
+  id        String   @id @default(cuid())
+  userId    String
+  gameId    String
+  level     Int?     // 游戏等级
+  rank      String?  // 段位
+  role      String?  // 擅长位置/角色
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([userId])
+  @@index([gameId])
+}
+
+// 社交内容模型
+model Post {
+  id          String   @id @default(cuid())
+  userId      String
+  gameId      String?
+  content     String   @db.Text
+  images      String[] // 图片 URL 数组
+  tags        String[] // 标签
+  title       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game     Game?     @relation(fields: [gameId], references: [id], onDelete: SetNull)
+  comments Comment[]
+  likes    Like[]
+
+  @@index([userId])
+  @@index([gameId])
+  @@index([createdAt])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  content   String   @db.Text
+  parentId  String?  // 回复评论的父评论 ID
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
+}
+
+// 关注系统（待开发）
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String   // 关注者
+  followingId String   // 被关注者
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+// 群组聊天（待开发）
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  avatar      String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner   User          @relation("GroupOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members GroupMember[]
+  messages GroupMessage[]
+
+  @@index([ownerId])
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String
+  userId    String
+  role      String   @default("member") // owner, admin, member
+  joinedAt  DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+}
+
+model GroupMessage {
+  id        String   @id @default(cuid())
+  groupId   String
+  userId    String
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// 游戏服务反向关系
+
+// 私聊消息（待开发）
+model Message {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String   @db.Text
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+// 陪玩服务（待开发）
+model CompanionService {
+  id          String   @id @default(cuid())
+  userId      String
+  gameId      String?
+  title       String
+  description String?  @db.Text
+  pricePerHour Decimal  @db.Decimal(10, 2)
+  available   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game   Game?           @relation("CompanionServiceGame", fields: [gameId], references: [id], onDelete: SetNull)
+  orders CompanionOrder[]
+
+  @@index([userId])
+  @@index([gameId])
+}
+
+model CompanionOrder {
+  id              String   @id @default(cuid())
+  serviceId       String
+  clientId        String   // 下单用户
+  companionId     String   // 陪玩师
+  startTime       DateTime
+  endTime         DateTime?
+  duration        Int      // 小时数
+  totalPrice      Decimal  @db.Decimal(10, 2)
+  status          String   @default("pending") // pending, confirmed, completed, cancelled
+  rating          Int?     // 1-5
+  review          String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  service CompanionService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  client  User @relation("CompanionOrderClient", fields: [clientId], references: [id], onDelete: Cascade)
+  companion User @relation("CompanionOrderCompanion", fields: [companionId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId])
+  @@index([clientId])
+  @@index([companionId])
+  @@index([status])
+}
