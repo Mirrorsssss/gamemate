@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+
+const authOptions = {
+  providers: [],
+  secret: process.env.NEXTAUTH_SECRET
+}
 
 // 获取评论列表
 export async function GET(
